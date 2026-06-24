@@ -2,8 +2,8 @@
 
 This repository contains a high-performance, low-latency, voice-to-voice agent named **Alex**. The system utilizes **WebRTC** for real-time bidirectional audio streaming and features **Retrieval-Augmented Generation (RAG)** powered by ChromaDB, an inventory SQLite management database, and a live observability telemetry dashboard.
 
-Demo - [https://share.descript.com/view/rptA3etMY0T](https://share.descript.com/view/rptA3etMY0T)
-P.S - token key is deleted, won't work.
+### Demo - [https://share.descript.com/view/rptA3etMY0T](https://share.descript.com/view/rptA3etMY0T)
+### P.S - token key is deleted, won't work.
 ---
 
 ## Architecture Overview
