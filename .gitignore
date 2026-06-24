@@ -1,0 +1,21 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local databases & user data
+chroma_db/
+inventory.db
+inventory_report.xlsx
+mistral_token.txt
+.env
+
+# OS-specific files
+.DS_Store
+Thumbs.db

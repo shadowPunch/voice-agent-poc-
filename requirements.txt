@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+aiortc
+faster-whisper
+kokoro
+langchain-core
+langchain-mistralai
+langgraph
+numpy
+torch
+torchaudio
+av
+pandas
+openpyxl
+sentence-transformers
+chromadb
+soundfile

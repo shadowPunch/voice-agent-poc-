@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Alex - Observability Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f1115;
+            color: #d4d4d4;
+        }
+
+        .system-msg {
+            color: #ce9178;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+
+        .user-label {
+            color: #569cd6;
+            font-weight: bold;
+        }
+
+        .agent-label {
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        #chat-box {
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .metric-card {
+            background-color: #1a1d24;
+            border: 1px solid #2d313a;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .metric-val {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e6edf3;
+            margin-top: 0.25rem;
+            font-family: monospace;
+        }
+
+        .pulse-text {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex flex-col h-[100dvh] w-full overflow-hidden">
+
+    <!-- ==================== LOBBY SCREEN ==================== -->
+    <div id="lobby-screen"
+        class="flex-1 flex flex-col items-center justify-center p-6 space-y-6 max-w-3xl mx-auto w-full">
+        <div class="text-center mb-4">
+            <h1 class="text-4xl font-bold text-white mb-2">Alex <span class="text-blue-500">Voice API</span></h1>
+            <p class="text-gray-400">Observability & Multi-Room Workspace</p>
+        </div>
+
+        <input type="text" id="room-input"
+            class="p-4 rounded-xl bg-[#1a1d24] text-white w-full max-w-sm text-center text-xl font-bold border border-gray-700 focus:border-blue-500 focus:outline-none transition-colors"
+            placeholder="Enter Room ID">
+
+        <button id="join-btn"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-full shadow-lg transform transition active:scale-95 w-full max-w-sm text-lg">
+            Join Workspace
+        </button>
+    </div>
+
+    <!-- ==================== MAIN DASHBOARD ==================== -->
+    <div id="chat-screen" class="hidden flex-row h-full w-full max-w-6xl mx-auto">
+
+        <!-- LEFT COLUMN: Conversation -->
+        <div class="flex-1 flex flex-col h-full border-r border-gray-800 bg-[#0f1115]">
+            <div class="text-center py-4 border-b border-gray-800 flex-none relative">
+                <h1 class="text-2xl font-bold text-white">Alex</h1>
+                <p id="status" class="text-gray-400 font-bold mt-1">Connecting UI...</p>
+            </div>
+
+            <audio id="remoteAudio" autoplay playsinline></audio>
+            <div id="chat-box" class="flex-1 overflow-y-auto py-6 space-y-4 px-6"></div>
+
+            <div class="pb-8 pt-4 flex justify-center flex-none bg-[#0f1115]">
+                <button id="startBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full shadow-lg transform transition active:scale-95 w-full max-w-xs">
+                    Start Voice Link
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Observability Metrics (Hidden on Mobile) -->
+        <div class="hidden md:flex w-80 flex-col h-full bg-[#12141a] p-6 overflow-y-auto">
+            <div class="mb-6 pb-4 border-b border-gray-800">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 pulse-text"></span>
+                    Live Telemetry
+                </h2>
+                <p class="text-xs text-gray-500 mt-1" id="ws-health">WS Ping: Measuring...</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="metric-card border-blue-900 bg-blue-900/10">
+                    <div class="metric-label">True E2E Turnaround</div>
+                    <div class="metric-val text-blue-400" id="m-total">--- ms</div>
+                    <div class="text-xs text-gray-500 mt-1">Last Word to First Audio</div>
+                </div>
+
+                <div class="metric-card border-purple-900 bg-purple-900/10">
+                    <div class="metric-label">Real Time Factor (RTF)</div>
+                    <div class="metric-val text-purple-400" id="m-rtf">---</div>
+                    <div class="text-xs text-gray-500 mt-1">Processing Time / Audio Length</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">First Audio Latency (TTFA)</div>
+                    <div class="metric-val text-green-400" id="m-first-audio">--- ms</div>
+                    <div class="text-xs text-gray-500 mt-1">VAD Trigger to Audio Output</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">End of Speech Latency</div>
+                    <div class="metric-val" id="m-eos">--- ms</div>
+                    <div class="text-xs text-gray-500 mt-1">Silero VAD Silence Buffer</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">STT Whisper Latency</div>
+                    <div class="metric-val" id="m-stt">--- ms</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">LLM Time-to-First-Token</div>
+                    <div class="metric-val" id="m-llm">--- ms</div>
+                    <div class="text-xs text-gray-500 mt-1">Ministral-8b inference</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">TTS Synthesis Latency</div>
+                    <div class="metric-val" id="m-tts">--- ms</div>
+                    <div class="text-xs text-gray-500 mt-1">Kokoro-82M processing</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">User Delay (Hesitation)</div>
+                    <div class="metric-val" id="m-delay">--- s</div>
+                    <div class="text-xs text-gray-500 mt-1">Time taken to reply</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Audio Quality</div>
+                    <div class="metric-val" id="m-quality">---</div>
+                    <div class="text-xs text-gray-500 mt-1">Peak Amplitude (RMS)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const chatScreen = document.getElementById('chat-screen');
+        const roomInput = document.getElementById('room-input');
+        const joinBtn = document.getElementById('join-btn');
+        const statusEl = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const chatBox = document.getElementById('chat-box');
+        const remoteAudio = document.getElementById('remoteAudio');
+
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || ('ontouchstart' in window);
+
+        let initialRoom = window.location.hash.substring(1);
+        if (!initialRoom) initialRoom = "room_" + Math.floor(Math.random() * 10000);
+        roomInput.value = initialRoom;
+
+        joinBtn.onclick = () => {
+            const roomId = roomInput.value.trim();
+            if (!roomId) return;
+            window.location.hash = roomId;
+
+            lobbyScreen.classList.add('hidden');
+            chatScreen.classList.remove('hidden');
+            chatScreen.classList.add('flex');
+
+            startChatSession(roomId);
+        };
+
+        function startChatSession(roomId) {
+            if (!isMobile) startBtn.style.display = 'none';
+
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const uiWs = new WebSocket(`${wsProtocol}//${window.location.host}/ws/ui/${roomId}`);
+
+            let currentAgentDiv = null;
+
+            // --- WEBSOCKET HEALTH PING ---
+            setInterval(() => {
+                if (uiWs.readyState === WebSocket.OPEN) {
+                    uiWs.send(JSON.stringify({ type: "ping", time: Date.now() }));
+                }
+            }, 2000);
+
+            uiWs.onopen = () => {
+                chatBox.innerHTML += `<div class="system-msg">--- Joined Workspace: ${roomId} ---</div>`;
+                if (!isMobile) {
+                    statusEl.innerHTML = `[💻 Dashboard] Waiting for mobile voice link...`;
+                    statusEl.className = "text-blue-400 font-bold mt-1";
+                } else {
+                    statusEl.innerHTML = `Ready for Voice Link`;
+                    statusEl.className = "text-gray-400 font-bold mt-1";
+                }
+            };
+
+            uiWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+
+                // --- WS Health Heartbeat ---
+                if (data.type === "pong") {
+                    const latency = Date.now() - data.time;
+                    document.getElementById('ws-health').textContent = `WS Ping: ${latency}ms`;
+                    return;
+                }
+
+                // --- Telemetry Overlay Updates ---
+                if (data.type === "telemetry") {
+                    document.getElementById('m-total').textContent = data.data.total_rt || "---";
+                    document.getElementById('m-first-audio').textContent = data.data.first_audio || "---";
+                    document.getElementById('m-rtf').textContent = data.data.rtf || "---";
+                    document.getElementById('m-eos').textContent = data.data.eos_latency || "---";
+
+                    document.getElementById('m-stt').textContent = data.data.stt_latency || "---";
+                    document.getElementById('m-llm').textContent = data.data.llm_ttft || "---";
+                    document.getElementById('m-tts').textContent = data.data.tts_latency || "---";
+                    document.getElementById('m-delay').textContent = data.data.user_delay || "---";
+                    document.getElementById('m-quality').textContent = data.data.audio_quality || "---";
+                    return;
+                }
+
+                // --- UI State Handling ---
+                if (data.type === "state") {
+                    statusEl.textContent = data.val;
+                    if (data.val.includes("Processing") || data.val.includes("Thinking")) statusEl.className = "text-yellow-500 font-bold mt-1";
+                    else if (data.val.includes("Speaking")) statusEl.className = "text-green-500 font-bold mt-1";
+                    else statusEl.className = "text-red-400 font-bold mt-1";
+                }
+                else if (data.type === "system") {
+                    chatBox.innerHTML += `<div class="system-msg">--- ${data.text} ---</div>`;
+                }
+                else if (data.type === "user") {
+                    chatBox.innerHTML += `<div><div class="user-label">You</div><div class="text-white">${data.text}</div></div>`;
+                }
+                else if (data.type === "agent_start") {
+                    currentAgentDiv = document.createElement("div");
+                    currentAgentDiv.innerHTML = `<div class="agent-label mb-1">Alex</div><span class="content text-white"></span>`;
+                    chatBox.appendChild(currentAgentDiv);
+                }
+                else if (data.type === "agent_chunk" && currentAgentDiv) {
+                    currentAgentDiv.querySelector('.content').textContent += data.text;
+                }
+
+                chatBox.scrollTop = chatBox.scrollHeight;
+            };
+
+            startBtn.onclick = async () => {
+                startBtn.disabled = true;
+                statusEl.textContent = `Granting Mic Access...`;
+
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                    });
+
+                    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+                    pc.onicegatheringstatechange = () => {
+                        if (pc.iceGatheringState === 'gathering') statusEl.textContent = `Finding Network Routes (ICE)...`;
+                    };
+
+                    pc.onconnectionstatechange = () => {
+                        if (pc.connectionState === 'connecting' || pc.connectionState === 'checking') {
+                            statusEl.textContent = `Establishing Secure Link...`;
+                            statusEl.className = "text-yellow-400 font-bold mt-1";
+                        } else if (pc.connectionState === 'connected') {
+                            statusEl.textContent = `Voice Link Active! Listening...`;
+                            statusEl.className = "text-green-400 font-bold mt-1";
+                        }
+                    };
+
+                    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+                    pc.ontrack = (event) => {
+                        if (remoteAudio.srcObject !== event.streams[0]) {
+                            remoteAudio.srcObject = event.streams[0];
+                            remoteAudio.play().catch(e => console.log("Audio play deferred"));
+                        }
+                    };
+
+                    const webrtcWs = new WebSocket(`${wsProtocol}//${window.location.host}/ws/webrtc/${roomId}`);
+
+                    webrtcWs.onopen = async () => {
+                        statusEl.textContent = `Generating Server Handshake...`;
+                        const offer = await pc.createOffer();
+                        await pc.setLocalDescription(offer);
+                        webrtcWs.send(JSON.stringify({ sdp: pc.localDescription.sdp, type: pc.localDescription.type }));
+                    };
+
+                    webrtcWs.onmessage = async (event) => {
+                        const answer = JSON.parse(event.data);
+                        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                        startBtn.style.display = 'none';
+                    };
+
+                } catch (e) {
+                    alert("Microphone Error: Please grant permissions.");
+                    startBtn.disabled = false;
+                }
+            };
+        }
+    </script>
+</body>
+
+</html>
