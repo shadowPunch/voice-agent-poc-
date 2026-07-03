@@ -2,6 +2,9 @@
 
 This repository contains a high-performance, low-latency, voice-to-voice agent named **Alex**. The system utilizes **WebRTC** for real-time bidirectional audio streaming and features **Retrieval-Augmented Generation (RAG)** powered by ChromaDB, an inventory SQLite management database, and a live observability telemetry dashboard.
 
+<img width="1172" height="890" alt="image" src="https://github.com/user-attachments/assets/44e8cb2f-0418-410c-944b-2ce062bcff29" />
+
+
 ### Demo - [https://share.descript.com/view/rptA3etMY0T](https://share.descript.com/view/rptA3etMY0T)
 ### P.S - Mistral token key is deleted, won't work.
 ---
